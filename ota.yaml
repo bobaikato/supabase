@@ -3,8 +3,6 @@ project:
   name: supabase
   description: Supabase monorepo readiness slice focused on www/docs/studio contributor workflows
   type: application
-tools:
-  docker: "*"
 execution:
   default_context: host
   contexts:
@@ -278,8 +276,6 @@ tasks:
     requirements:
       toolchains:
         - node
-      tools:
-        docker: "*"
       checks:
         - workspace-dependencies-installed
     depends_on:
@@ -317,8 +313,6 @@ tasks:
     requirements:
       toolchains:
         - node
-      tools:
-        docker: "*"
       checks:
         - workspace-dependencies-installed
     safe_for_agent: false
