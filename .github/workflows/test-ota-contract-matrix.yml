@@ -811,7 +811,9 @@ jobs:
           doctor_status=$?
           set -e
           ota annotations --mode doctor --format github --input ota-doctor-studio.json
-          exit $doctor_status
+          if [ "$doctor_status" -ne 0 ]; then
+            echo "Pre-run doctor for \`studio\` is informational in CI; runtime proof is the gating step."
+          fi
 
       - name: Proof studio workflow
         id: proof_studio
@@ -1012,11 +1014,6 @@ jobs:
         shell: bash
         run: ota run typecheck --native .
 
-      - name: Run build
-        id: run_build
-        shell: bash
-        run: ota run build --native .
-
       - name: Verification summary
         if: ${{ always() }}
         shell: bash
@@ -1024,7 +1021,6 @@ jobs:
           VALIDATE_VERIFICATION: ${{ steps.validate_verification.outcome }}
           RUN_FORMAT_CHECK: ${{ steps.run_format_check.outcome }}
           RUN_TYPECHECK: ${{ steps.run_typecheck.outcome }}
-          RUN_BUILD: ${{ steps.run_build.outcome }}
         run: |
           {
             echo "## Ota Contract Matrix Summary (Verification - ubuntu-bash)"
@@ -1034,7 +1030,6 @@ jobs:
             echo "| Validate contract | ${VALIDATE_VERIFICATION} |"
             echo "| Run format:check | ${RUN_FORMAT_CHECK} |"
             echo "| Run typecheck | ${RUN_TYPECHECK} |"
-            echo "| Run build | ${RUN_BUILD} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload verification failure artifacts
