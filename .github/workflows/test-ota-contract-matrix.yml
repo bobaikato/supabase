@@ -2,6 +2,11 @@ name: 'Test: Ota contract matrix'
 
 on:
   workflow_dispatch:
+    inputs:
+      ota_ref:
+        description: Ota ref used by the Studio Docker proof job when validating unreleased Ota changes
+        required: false
+        default: bobai/supabase-docker-slice-scoping
   pull_request:
     paths:
       - 'ota.yaml'
@@ -149,11 +154,23 @@ jobs:
         shell: bash
         run: ota tasks --workflow studio .
 
+      - name: List studio:docker workflow tasks [bash]
+        id: tasks_studio_docker_bash
+        if: matrix.run_shell == 'bash'
+        shell: bash
+        run: ota tasks --workflow studio:docker .
+
       - name: List studio workflow tasks [pwsh]
         id: tasks_studio_pwsh
         if: matrix.run_shell == 'pwsh'
         shell: pwsh
         run: ota tasks --workflow studio .
+
+      - name: List studio:docker workflow tasks [pwsh]
+        id: tasks_studio_docker_pwsh
+        if: matrix.run_shell == 'pwsh'
+        shell: pwsh
+        run: ota tasks --workflow studio:docker .
 
       - name: Export execution topology [bash]
         id: topology_bash
@@ -340,6 +357,8 @@ jobs:
           TASKS_INSTANT_PWSH: ${{ steps.tasks_instant_pwsh.outcome }}
           TASKS_STUDIO_BASH: ${{ steps.tasks_studio_bash.outcome }}
           TASKS_STUDIO_PWSH: ${{ steps.tasks_studio_pwsh.outcome }}
+          TASKS_STUDIO_DOCKER_BASH: ${{ steps.tasks_studio_docker_bash.outcome }}
+          TASKS_STUDIO_DOCKER_PWSH: ${{ steps.tasks_studio_docker_pwsh.outcome }}
           TOPOLOGY_BASH: ${{ steps.topology_bash.outcome }}
           TOPOLOGY_PWSH: ${{ steps.topology_pwsh.outcome }}
           DOCTOR_INSTANT_BASH: ${{ steps.doctor_instant_bash.outcome }}
@@ -371,6 +390,7 @@ jobs:
             echo "| List docs tasks | ${TASKS_DOCS_BASH:-$TASKS_DOCS_PWSH} |"
             echo "| List instant tasks | ${TASKS_INSTANT_BASH:-$TASKS_INSTANT_PWSH} |"
             echo "| List studio tasks | ${TASKS_STUDIO_BASH:-$TASKS_STUDIO_PWSH} |"
+            echo "| List studio:docker tasks | ${TASKS_STUDIO_DOCKER_BASH:-$TASKS_STUDIO_DOCKER_PWSH} |"
             echo "| Export topology | ${TOPOLOGY_BASH:-$TOPOLOGY_PWSH} |"
             echo "| Doctor instant (+ annotations) | ${DOCTOR_INSTANT_BASH:-$DOCTOR_INSTANT_PWSH} |"
             echo "| Instant readiness | ${PROOF_INSTANT:-$PROOF_INSTANT_PWSH} |"
@@ -841,5 +861,115 @@ jobs:
             ota-proof-studio.json
             keys.json
             apps/studio/.env.test
+            .ota/
+          retention-days: 7
+
+  studio-docker-ubuntu:
+    name: Ota Contract Matrix (Studio Docker - ubuntu-bash)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Checkout ota source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ota-run/ota
+          ref: ${{ github.event.inputs.ota_ref || 'bobai/supabase-docker-slice-scoping' }}
+          path: .ota-src
+          persist-credentials: false
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build ota from source
+        shell: bash
+        run: |
+          cargo build --release --quiet --manifest-path .ota-src/Cargo.toml
+          install -m 0755 .ota-src/target/release/ota "$HOME/.local/bin/ota"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify ota install
+        shell: bash
+        run: |
+          ota --version
+          which ota
+
+      - name: Verify Docker engine availability
+        shell: bash
+        run: |
+          docker --version
+          docker info
+
+      - name: Validate studio:docker workflow contract
+        id: validate_studio_docker
+        shell: bash
+        run: |
+          ota validate --json . > ota-validate-studio-docker.json
+          ota validate .
+
+      - name: List studio:docker workflow tasks
+        id: tasks_studio_docker
+        shell: bash
+        run: ota tasks --workflow studio:docker .
+
+      - name: Export execution topology
+        id: topology_studio_docker
+        shell: bash
+        run: |
+          ota execution topology --json . > ota-execution-topology-studio-docker.json
+          cat ota-execution-topology-studio-docker.json
+
+      - name: Dry-run studio:docker workflow
+        id: dry_run_studio_docker
+        shell: bash
+        run: ota up --workflow studio:docker --native --dry-run .
+
+      - name: Proof studio:docker workflow
+        id: proof_studio_docker
+        shell: bash
+        run: |
+          ota clean . || true
+          ota proof runtime --workflow studio:docker --json . > ota-proof-studio-docker.json
+          cat ota-proof-studio-docker.json
+          ota clean . || true
+
+      - name: Studio Docker workflow summary
+        if: ${{ always() }}
+        shell: bash
+        env:
+          VALIDATE_STUDIO_DOCKER: ${{ steps.validate_studio_docker.outcome }}
+          TASKS_STUDIO_DOCKER: ${{ steps.tasks_studio_docker.outcome }}
+          TOPOLOGY_STUDIO_DOCKER: ${{ steps.topology_studio_docker.outcome }}
+          DRY_RUN_STUDIO_DOCKER: ${{ steps.dry_run_studio_docker.outcome }}
+          PROOF_STUDIO_DOCKER: ${{ steps.proof_studio_docker.outcome }}
+        run: |
+          {
+            echo "## Ota Contract Matrix Summary (Studio Docker - ubuntu-bash)"
+            echo
+            echo "| Phase | Outcome |"
+            echo "| --- | --- |"
+            echo "| Validate studio:docker workflow contract | ${VALIDATE_STUDIO_DOCKER} |"
+            echo "| List studio:docker workflow tasks | ${TASKS_STUDIO_DOCKER} |"
+            echo "| Export execution topology | ${TOPOLOGY_STUDIO_DOCKER} |"
+            echo "| Dry-run studio:docker workflow | ${DRY_RUN_STUDIO_DOCKER} |"
+            echo "| Proof studio:docker workflow | ${PROOF_STUDIO_DOCKER} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload studio:docker failure artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ota-contract-matrix-studio-docker-ubuntu-bash
+          include-hidden-files: true
+          path: |
+            ota-validate-studio-docker.json
+            ota-execution-topology-studio-docker.json
+            ota-proof-studio-docker.json
+            docker/.env
             .ota/
           retention-days: 7

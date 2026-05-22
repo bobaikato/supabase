@@ -13,6 +13,11 @@ execution:
           node: "^22.12.0"
         tools:
           pnpm: "10.24.0"
+    docker-host:
+      backend: native
+      requirements:
+        tools:
+          docker: "*"
     app:
       backend: container
       lifecycle: persistent
@@ -317,6 +322,48 @@ tasks:
         - workspace-dependencies-installed
     safe_for_agent: false
     internal: true
+  setup:docker-env:
+    context: docker-host
+    description: Create the Docker self-hosted env file from the repository template when missing
+    notes: |
+      This follows the repo's documented Docker setup path under `docker/`.
+      It only copies `docker/.env.example` when `docker/.env` is absent.
+    category: setup
+    action:
+      kind: copy_if_missing
+      from: docker/.env.example
+      to: docker/.env
+    safe_for_agent: true
+  dev:studio-docker:
+    context: docker-host
+    description: Run the Docker-based Supabase Studio stack from the repository compose configuration
+    notes: |
+      Use this when you want the documented self-hosted Docker path rooted under `docker/`.
+      This is distinct from the `studio` workflow, which uses the local Supabase CLI backend plus a host-native Studio frontend.
+    category: dev
+    run: cd docker && docker compose up
+    requirements:
+      checks:
+        - docker-env-configured
+    depends_on:
+      - setup:docker-env
+    safe_for_agent: false
+    runtime:
+      kind: service
+      surfaces:
+        - studio
+  stop:studio-docker:
+    context: docker-host
+    description: Stop the Docker-based Supabase Studio stack
+    notes: |
+      Internal cleanup task for Docker Studio workflow pressure tests and local teardown.
+    category: cleanup
+    run: cd docker && docker compose down
+    requirements:
+      checks:
+        - docker-env-configured
+    safe_for_agent: false
+    internal: true
 workflows:
   default: app
   app:
@@ -421,6 +468,21 @@ workflows:
         - studio
     exposes:
       - surface: studio
+  studio:docker:
+    intent: self_hosted_development
+    description: Docker-based Supabase Studio stack rooted in the repository compose configuration
+    notes: |
+      Use this when you want the documented Docker path under `docker/`.
+      This runs the self-hosted stack through `docker compose` instead of the local CLI-backed Studio loop.
+    prepare:
+      task: setup:docker-env
+    run:
+      task: dev:studio-docker
+    readiness:
+      surfaces:
+        - studio
+    exposes:
+      - surface: studio
 checks:
   - name: workspace-dependencies-installed
     kind: file
@@ -440,11 +502,18 @@ checks:
     path: apps/studio/.env.test
     expect: file
     timeout: 10000
+  - name: docker-env-configured
+    kind: file
+    severity: error
+    path: docker/.env
+    expect: file
+    timeout: 10000
 agent:
   entrypoint: install
   default_task: build
   safe_tasks:
     - setup:env-www
+    - setup:docker-env
     - install
     - build
     - typecheck
@@ -468,6 +537,7 @@ agent:
     - .env
     - .env.local
     - apps/www/.env.local
+    - docker/.env
     - pnpm-lock.yaml
     - pnpm-workspace.yaml
     - turbo.jsonc
@@ -477,9 +547,11 @@ agent:
       sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.15 sh
       powershell: $env:OTA_VERSION='v1.6.15'; irm https://dist.ota.run/install.ps1 | iex
   notes: |
-    This contract intentionally scopes to www/docs/studio contributor workflows for readiness pressure-testing.
+    This contract intentionally scopes to www/docs/studio contributor workflows plus the documented Docker
+    Studio path for readiness pressure-testing.
     Use `app` for the canonical site development loop and `docs` for docs-only changes.
     Use `studio` when changing `apps/studio` and you need the local CLI-backed backend.
+    Use `studio:docker` when you want the documented self-hosted Docker path rooted in `docker/`.
     Use `instant` for fast readiness/smoke validation when a full workflow path is unnecessary.
     Use `--mode container` when you want the same workflows to run through the declared container context.
     `apps/www/.env.local` remains protected for direct edits; only `setup:env-www` may create it via
