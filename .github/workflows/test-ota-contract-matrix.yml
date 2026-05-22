@@ -890,6 +890,7 @@ jobs:
         shell: bash
         run: |
           cargo build --release --quiet --manifest-path .ota-src/Cargo.toml
+          mkdir -p "$HOME/.local/bin"
           install -m 0755 .ota-src/target/release/ota "$HOME/.local/bin/ota"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
