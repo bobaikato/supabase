@@ -1,8 +1,10 @@
 version: 1
 project:
   name: supabase
-  description: Supabase monorepo readiness slice focused on www/docs workflows
+  description: Supabase monorepo readiness slice focused on www/docs/studio contributor workflows
   type: application
+tools:
+  docker: "*"
 execution:
   default_context: host
   contexts:
@@ -78,6 +80,25 @@ surfaces:
       timeout: 3s
       retries: 12
       start_period: 10s
+  studio:
+    kind: http
+    port: 8082
+    path: /project/default
+    readiness:
+      kind: http
+      method: GET
+      path: /project/default
+      headers:
+        Accept: text/html
+      success:
+        status:
+          - 200
+      body:
+        contains: "<!DOCTYPE html>"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 tasks:
   setup:env-www:
     context: host
@@ -246,6 +267,62 @@ tasks:
       kind: service
       surfaces:
         - docs
+  setup:studio-cli:
+    context: host
+    description: Start the local Supabase CLI backend for Studio and generate local environment files
+    notes: |
+      This follows the repo's canonical Studio contributor path.
+      It starts the local Supabase backend (excluding Studio itself), writes `keys.json`, and generates `apps/studio/.env.test`.
+    category: setup
+    run: corepack pnpm setup:cli
+    requirements:
+      toolchains:
+        - node
+      tools:
+        docker: "*"
+      checks:
+        - workspace-dependencies-installed
+    depends_on:
+      - install
+    safe_for_agent: false
+  dev:studio:
+    context: host
+    description: Run Studio against the local CLI-backed backend
+    notes: |
+      Use this when editing `apps/studio` and you need the local Supabase backend services.
+      This workflow is intentionally heavier than the `www` or `docs` slices because it brings up the local backend first.
+    category: dev
+    run: NODE_ENV=test pnpm --prefix ./apps/studio dev
+    requirements:
+      toolchains:
+        - node
+      checks:
+        - workspace-dependencies-installed
+        - studio-local-keys-generated
+        - studio-local-env-generated
+    depends_on:
+      - setup:studio-cli
+    safe_for_agent: false
+    runtime:
+      kind: service
+      surfaces:
+        - studio
+  stop:studio-cli:
+    context: host
+    description: Stop the local Supabase CLI backend used by the Studio workflow
+    notes: |
+      Internal cleanup task for Studio workflow pressure tests and local teardown.
+    category: cleanup
+    run: corepack pnpm exec supabase stop --all --no-backup
+    requirements:
+      toolchains:
+        - node
+      tools:
+        docker: "*"
+      checks:
+        - workspace-dependencies-installed
+    safe_for_agent: false
+    internal: true
 workflows:
   default: app
   app:
@@ -335,11 +412,38 @@ workflows:
         - www
     exposes:
       - surface: www
+  studio:
+    intent: local_development
+    description: Studio dashboard development backed by the local Supabase CLI stack
+    notes: |
+      Use this when changing `apps/studio`.
+      It is heavier than the `www` and `docs` workflows because it prepares the local backend before launching Studio.
+    setup:
+      task: setup:studio-cli
+    run:
+      task: dev:studio
+    readiness:
+      surfaces:
+        - studio
+    exposes:
+      - surface: studio
 checks:
   - name: workspace-dependencies-installed
     kind: file
     severity: error
     path: node_modules/.modules.yaml
+    expect: file
+    timeout: 10000
+  - name: studio-local-keys-generated
+    kind: file
+    severity: error
+    path: keys.json
+    expect: file
+    timeout: 10000
+  - name: studio-local-env-generated
+    kind: file
+    severity: error
+    path: apps/studio/.env.test
     expect: file
     timeout: 10000
 agent:
@@ -379,8 +483,9 @@ agent:
       sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.15 sh
       powershell: $env:OTA_VERSION='v1.6.15'; irm https://dist.ota.run/install.ps1 | iex
   notes: |
-    This contract intentionally scopes to www/docs workflows for readiness pressure-testing.
+    This contract intentionally scopes to www/docs/studio contributor workflows for readiness pressure-testing.
     Use `app` for the canonical site development loop and `docs` for docs-only changes.
+    Use `studio` when changing `apps/studio` and you need the local CLI-backed backend.
     Use `instant` for fast readiness/smoke validation when a full workflow path is unnecessary.
     Use `--mode container` when you want the same workflows to run through the declared container context.
     `apps/www/.env.local` remains protected for direct edits; only `setup:env-www` may create it via
