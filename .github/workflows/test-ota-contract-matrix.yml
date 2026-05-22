@@ -964,3 +964,85 @@ jobs:
             ota-execution-topology-studio-docker.json
             docker/.env
           retention-days: 7
+
+  verification-ubuntu:
+    name: Ota Contract Matrix (Verification - ubuntu-bash)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+
+      - name: Activate pnpm via Corepack
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.24.0 --activate
+          pnpm --version
+
+      - name: Setup ota
+        uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
+        with:
+          ota-version: 1.6.15
+
+      - name: Verify ota install
+        shell: bash
+        run: ota --version
+
+      - name: Validate contract
+        id: validate_verification
+        shell: bash
+        run: ota validate .
+
+      - name: Run format check
+        id: run_format_check
+        shell: bash
+        run: ota run format:check --native .
+
+      - name: Run typecheck
+        id: run_typecheck
+        shell: bash
+        run: ota run typecheck --native .
+
+      - name: Run build
+        id: run_build
+        shell: bash
+        run: ota run build --native .
+
+      - name: Verification summary
+        if: ${{ always() }}
+        shell: bash
+        env:
+          VALIDATE_VERIFICATION: ${{ steps.validate_verification.outcome }}
+          RUN_FORMAT_CHECK: ${{ steps.run_format_check.outcome }}
+          RUN_TYPECHECK: ${{ steps.run_typecheck.outcome }}
+          RUN_BUILD: ${{ steps.run_build.outcome }}
+        run: |
+          {
+            echo "## Ota Contract Matrix Summary (Verification - ubuntu-bash)"
+            echo
+            echo "| Phase | Outcome |"
+            echo "| --- | --- |"
+            echo "| Validate contract | ${VALIDATE_VERIFICATION} |"
+            echo "| Run format:check | ${RUN_FORMAT_CHECK} |"
+            echo "| Run typecheck | ${RUN_TYPECHECK} |"
+            echo "| Run build | ${RUN_BUILD} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verification failure artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ota-contract-matrix-verification-ubuntu-bash
+          include-hidden-files: true
+          path: |
+            .ota/
+          retention-days: 7
