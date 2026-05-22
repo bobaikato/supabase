@@ -865,7 +865,7 @@ jobs:
           retention-days: 7
 
   studio-docker-ubuntu:
-    name: Ota Contract Matrix (Studio Docker - ubuntu-bash)
+    name: Ota Contract Matrix (Studio Docker Smoke - ubuntu-bash)
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -930,15 +930,6 @@ jobs:
         shell: bash
         run: ota up --workflow studio:docker --native --dry-run .
 
-      - name: Proof studio:docker workflow
-        id: proof_studio_docker
-        shell: bash
-        run: |
-          ota clean . || true
-          ota proof runtime --workflow studio:docker --json . > ota-proof-studio-docker.json
-          cat ota-proof-studio-docker.json
-          ota clean . || true
-
       - name: Studio Docker workflow summary
         if: ${{ always() }}
         shell: bash
@@ -947,10 +938,9 @@ jobs:
           TASKS_STUDIO_DOCKER: ${{ steps.tasks_studio_docker.outcome }}
           TOPOLOGY_STUDIO_DOCKER: ${{ steps.topology_studio_docker.outcome }}
           DRY_RUN_STUDIO_DOCKER: ${{ steps.dry_run_studio_docker.outcome }}
-          PROOF_STUDIO_DOCKER: ${{ steps.proof_studio_docker.outcome }}
         run: |
           {
-            echo "## Ota Contract Matrix Summary (Studio Docker - ubuntu-bash)"
+            echo "## Ota Contract Matrix Summary (Studio Docker Smoke - ubuntu-bash)"
             echo
             echo "| Phase | Outcome |"
             echo "| --- | --- |"
@@ -958,19 +948,19 @@ jobs:
             echo "| List studio:docker workflow tasks | ${TASKS_STUDIO_DOCKER} |"
             echo "| Export execution topology | ${TOPOLOGY_STUDIO_DOCKER} |"
             echo "| Dry-run studio:docker workflow | ${DRY_RUN_STUDIO_DOCKER} |"
-            echo "| Proof studio:docker workflow | ${PROOF_STUDIO_DOCKER} |"
+            echo
+            echo "Hosted CI smoke intentionally stops at dry-run for \`studio:docker\`."
+            echo "The full Docker stack currently trips a repo-level \`ulimit\` restriction on GitHub-hosted Ubuntu runners, so runtime proof for this slice belongs on a self-hosted Docker runner."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload studio:docker failure artifacts
         if: ${{ failure() }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: ota-contract-matrix-studio-docker-ubuntu-bash
+          name: ota-contract-matrix-studio-docker-smoke-ubuntu-bash
           include-hidden-files: true
           path: |
             ota-validate-studio-docker.json
             ota-execution-topology-studio-docker.json
-            ota-proof-studio-docker.json
             docker/.env
-            .ota/
           retention-days: 7
