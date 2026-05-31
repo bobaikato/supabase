@@ -1,4 +1,7 @@
 version: 1
+metadata:
+  ota:
+    minimum_version: "1.6.18"
 project:
   name: supabase
   description: Supabase monorepo readiness slice focused on www/docs/studio contributor workflows
@@ -530,7 +533,6 @@ agent:
     - i18n
     - scripts
     - package.json
-    - apps/www/.env.local.example
   protected_paths:
     - ota.yaml
     - .github/workflows
@@ -541,11 +543,12 @@ agent:
     - pnpm-lock.yaml
     - pnpm-workspace.yaml
     - turbo.jsonc
+    - apps/www/.env.local.example
   bootstrap:
     ota:
       note: Install ota when missing so contributors and agents can run the readiness workflows declared in this contract.
-      sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.15 sh
-      powershell: $env:OTA_VERSION='v1.6.15'; irm https://dist.ota.run/install.ps1 | iex
+      sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.18 sh
+      powershell: $env:OTA_VERSION='v1.6.18'; irm https://dist.ota.run/install.ps1 | iex
   notes: |
     This contract intentionally scopes to www/docs/studio contributor workflows plus the documented Docker
     Studio path for readiness pressure-testing.

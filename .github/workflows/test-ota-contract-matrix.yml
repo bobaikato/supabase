@@ -10,7 +10,7 @@ on:
       ota_ref:
         description: Ota ref used by the Studio Docker proof job when validating unreleased Ota changes
         required: false
-        default: ec0f901e84f37a27728853c495abde575e1b24e9
+        default: v1.6.18
   pull_request:
     paths:
       - 'ota.yaml'
@@ -86,7 +86,7 @@ jobs:
       - name: Setup ota
         uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
         with:
-          ota-version: 1.6.15
+          ota-version: 1.6.18
 
       - name: Verify ota install [bash]
         if: matrix.run_shell == 'bash'
@@ -445,7 +445,7 @@ jobs:
       - name: Setup ota
         uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
         with:
-          ota-version: 1.6.15
+          ota-version: 1.6.18
 
       - name: Verify ota install
         shell: bash
@@ -629,7 +629,7 @@ jobs:
       - name: Setup ota
         uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
         with:
-          ota-version: 1.6.15
+          ota-version: 1.6.18
 
       - name: Verify ota install
         shell: bash
@@ -783,7 +783,7 @@ jobs:
       - name: Setup ota
         uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
         with:
-          ota-version: 1.6.15
+          ota-version: 1.6.18
 
       - name: Verify ota install
         shell: bash
@@ -882,10 +882,10 @@ jobs:
           persist-credentials: false
 
       - name: Install ota from source
-        uses: ota-run/ota/.github/actions/install-ota-from-source@ec0f901e84f37a27728853c495abde575e1b24e9
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.18
         with:
           repository: ${{ github.event.inputs.ota_repository || 'ota-run/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || 'ec0f901e84f37a27728853c495abde575e1b24e9' }}
+          ref: ${{ github.event.inputs.ota_ref || 'v1.6.18' }}
 
       - name: Verify Docker engine availability
         shell: bash
@@ -978,7 +978,7 @@ jobs:
       - name: Setup ota
         uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
         with:
-          ota-version: 1.6.15
+          ota-version: 1.6.18
 
       - name: Verify ota install
         shell: bash
