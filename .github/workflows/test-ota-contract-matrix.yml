@@ -6,11 +6,11 @@ on:
       ota_repository:
         description: Ota source repository used by source-backed matrix jobs
         required: false
-        default: ota-run/ota
+        default: bobaikato/ota
       ota_ref:
         description: Ota ref used by the Studio Docker proof job when validating unreleased Ota changes
         required: false
-        default: v1.6.18
+        default: 1.6.20-implementation
   pull_request:
     paths:
       - 'ota.yaml'
@@ -83,10 +83,11 @@ jobs:
           corepack prepare pnpm@10.24.0 --activate
           pnpm --version
 
-      - name: Setup ota
-        uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
+      - name: Install ota from source
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
-          ota-version: 1.6.18
+          repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
 
       - name: Verify ota install [bash]
         if: matrix.run_shell == 'bash'
@@ -442,10 +443,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup ota
-        uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
+      - name: Install ota from source
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
-          ota-version: 1.6.18
+          repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
 
       - name: Verify ota install
         shell: bash
@@ -626,10 +628,11 @@ jobs:
           corepack prepare pnpm@10.24.0 --activate
           pnpm --version
 
-      - name: Setup ota
-        uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
+      - name: Install ota from source
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
-          ota-version: 1.6.18
+          repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
 
       - name: Verify ota install
         shell: bash
@@ -780,10 +783,11 @@ jobs:
           corepack prepare pnpm@10.24.0 --activate
           pnpm --version
 
-      - name: Setup ota
-        uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
+      - name: Install ota from source
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
-          ota-version: 1.6.18
+          repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
 
       - name: Verify ota install
         shell: bash
@@ -882,10 +886,10 @@ jobs:
           persist-credentials: false
 
       - name: Install ota from source
-        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.18
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
-          repository: ${{ github.event.inputs.ota_repository || 'ota-run/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || 'v1.6.18' }}
+          repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
 
       - name: Verify Docker engine availability
         shell: bash
@@ -975,10 +979,11 @@ jobs:
           corepack prepare pnpm@10.24.0 --activate
           pnpm --version
 
-      - name: Setup ota
-        uses: ota-run/setup@4ec459ee7956050be33e5c30f7e070f1f155c023 # v1
+      - name: Install ota from source
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
-          ota-version: 1.6.18
+          repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
 
       - name: Verify ota install
         shell: bash
