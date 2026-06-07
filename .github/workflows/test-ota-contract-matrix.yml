@@ -825,6 +825,7 @@ jobs:
 
       - name: Proof studio workflow
         id: proof_studio
+        timeout-minutes: 20
         shell: bash
         run: |
           set -euo pipefail
@@ -837,8 +838,26 @@ jobs:
           }
 
           cleanup_state
-          ota proof runtime --workflow studio --json . > ota-proof-studio.json
-          cat ota-proof-studio.json
+          set +e
+          timeout --kill-after=30s 900s ota proof runtime --workflow studio --json . > ota-proof-studio.json 2> ota-proof-studio.stderr.log
+          proof_status=$?
+          set -e
+
+          if [ -f ota-proof-studio.json ]; then
+            cat ota-proof-studio.json
+          fi
+
+          if [ "$proof_status" -eq 124 ]; then
+            echo "1" > ota-proof-studio-timeout.flag
+            echo "::error title=Studio proof hit matrix timeout::ota proof runtime --workflow studio exceeded 15 minutes. See ota-proof-studio.stderr.log and ./.ota/proof/studio/up-detached-run.log"
+            exit 1
+          fi
+
+          if [ "$proof_status" -ne 0 ]; then
+            echo "::error title=Studio proof failed before readiness::See ota-proof-studio.json, ota-proof-studio.stderr.log, and ./.ota/proof/studio/up.log"
+            exit "$proof_status"
+          fi
+
           cleanup_state
 
       - name: Studio workflow summary
@@ -869,6 +888,8 @@ jobs:
             ota-execution-topology-studio.json
             ota-doctor-studio.json
             ota-proof-studio.json
+            ota-proof-studio.stderr.log
+            ota-proof-studio-timeout.flag
             keys.json
             apps/studio/.env.test
             .ota/
