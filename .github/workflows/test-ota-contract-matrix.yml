@@ -847,7 +847,7 @@ jobs:
             cat ota-proof-studio.json
           fi
 
-          if [ "$proof_status" -eq 124 ]; then
+          if [ "$proof_status" -eq 124 ] || [ "$proof_status" -eq 143 ]; then
             echo "1" > ota-proof-studio-timeout.flag
             echo "::error title=Studio proof hit matrix timeout::ota proof runtime --workflow studio exceeded 15 minutes. See ota-proof-studio.stderr.log and ./.ota/proof/studio/up-detached-run.log"
             exit 1
