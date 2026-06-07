@@ -1,7 +1,7 @@
 version: 1
 metadata:
   ota:
-    minimum_version: "1.6.18"
+    minimum_version: "1.6.20"
 project:
   name: supabase
   description: Supabase monorepo readiness slice focused on www/docs/studio contributor workflows
@@ -43,10 +43,12 @@ execution:
             default: 4GiB
 toolchains:
   node:
-    provider: corepack
     version: "^22.12.0"
     package_managers:
       pnpm: "10.24.0"
+    fulfillment:
+      source: corepack
+      mode: run
 surfaces:
   www:
     kind: http
@@ -125,19 +127,30 @@ tasks:
       This is the canonical dependency hydration step for all workflows.
       Run this first on fresh clones and after lockfile changes.
     category: setup
-    run: corepack pnpm install --frozen-lockfile
+    prepare:
+      kind: dependency_hydration
+      medium: package_dependencies
+      source:
+        kind: node_package_manager
+        cwd: .
+        manager: pnpm
+        mode: install
+        frozen_lockfile: true
     execution:
       default_mode: native
       modes:
         native:
           context: host
-          run: corepack pnpm install --frozen-lockfile
         container:
           context: app
-          run: corepack pnpm install --frozen-lockfile
     requirements:
       toolchains:
         - node
+    effects:
+      writes:
+        - node_modules
+      network: true
+      network_kind: dependency_hydration
     safe_for_agent: true
   build:
     context: host
@@ -533,6 +546,7 @@ agent:
     - i18n
     - scripts
     - package.json
+    - node_modules
   protected_paths:
     - ota.yaml
     - .github/workflows
@@ -546,9 +560,9 @@ agent:
     - apps/www/.env.local.example
   bootstrap:
     ota:
-      note: Install ota when missing so contributors and agents can run the readiness workflows declared in this contract.
-      sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.18 sh
-      powershell: $env:OTA_VERSION='v1.6.18'; irm https://dist.ota.run/install.ps1 | iex
+      note: This pressure contract depends on unreleased Ota 1.6.20 surfaces (`tasks.<name>.prepare` and canonical toolchain fulfillment). Use a local source build or 1.6.20+ when cut.
+      sh: cargo install --git https://github.com/bobaikato/ota --branch 1.6.20-implementation ota --locked --force
+      powershell: cargo install --git https://github.com/bobaikato/ota --branch 1.6.20-implementation ota --locked --force
   notes: |
     This contract intentionally scopes to www/docs/studio contributor workflows plus the documented Docker
     Studio path for readiness pressure-testing.
