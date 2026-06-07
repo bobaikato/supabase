@@ -11,6 +11,10 @@ on:
         description: Ota ref used by the Studio Docker proof job when validating unreleased Ota changes
         required: false
         default: 1.6.20-implementation
+      run_studio_runtime_proof:
+        description: Run the heavier native Studio runtime proof lane on hosted Ubuntu
+        required: false
+        default: 'false'
   pull_request:
     paths:
       - 'ota.yaml'
@@ -820,11 +824,17 @@ jobs:
           set -e
           ota annotations --mode doctor --format github --input ota-doctor-studio.json
           if [ "$doctor_status" -ne 0 ]; then
-            echo "Pre-run doctor for \`studio\` is informational in CI; runtime proof is the gating step."
+            echo "Pre-run doctor for \`studio\` is informational in CI; hosted CI gates on dry-run by default and runtime proof is opt-in."
           fi
+
+      - name: Dry-run studio workflow
+        id: dry_run_studio
+        shell: bash
+        run: ota up --workflow studio --native --dry-run .
 
       - name: Proof studio workflow
         id: proof_studio
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_studio_runtime_proof == 'true' }}
         timeout-minutes: 20
         shell: bash
         run: |
@@ -865,6 +875,7 @@ jobs:
         shell: bash
         env:
           DOCTOR_STUDIO: ${{ steps.doctor_studio.outcome }}
+          DRY_RUN_STUDIO: ${{ steps.dry_run_studio.outcome }}
           PROOF_STUDIO: ${{ steps.proof_studio.outcome }}
         run: |
           {
@@ -873,7 +884,11 @@ jobs:
             echo "| Phase | Outcome |"
             echo "| --- | --- |"
             echo "| Doctor studio (+ annotations) | ${DOCTOR_STUDIO} |"
+            echo "| Dry-run studio workflow | ${DRY_RUN_STUDIO} |"
             echo "| Proof studio workflow | ${PROOF_STUDIO} |"
+            echo
+            echo "Hosted CI now defaults to dry-run for the native \`studio\` workflow."
+            echo "Enable \`run_studio_runtime_proof=true\` on workflow_dispatch when you explicitly want the heavier native Studio runtime pressure lane."
             echo
           } >> "$GITHUB_STEP_SUMMARY"
 
