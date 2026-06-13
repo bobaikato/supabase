@@ -560,9 +560,9 @@ agent:
     - apps/www/.env.local.example
   bootstrap:
     ota:
-      note: This pressure contract depends on unreleased Ota 1.6.20 surfaces (`tasks.<name>.prepare` and canonical toolchain fulfillment). Use a local source build or 1.6.20+ when cut.
-      sh: cargo install --git https://github.com/bobaikato/ota --branch 1.6.20-implementation ota --locked --force
-      powershell: cargo install --git https://github.com/bobaikato/ota --branch 1.6.20-implementation ota --locked --force
+      note: This pressure contract depends on Ota `1.6.20` surfaces (`tasks.<name>.prepare` and canonical toolchain fulfillment), so bootstrap stays pinned to the released `v1.6.20` line.
+      sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.20 sh
+      powershell: $env:OTA_VERSION='v1.6.20'; irm https://dist.ota.run/install.ps1 | iex
   notes: |
     This contract intentionally scopes to www/docs/studio contributor workflows plus the documented Docker
     Studio path for readiness pressure-testing.
