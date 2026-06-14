@@ -1,7 +1,7 @@
 version: 1
 metadata:
   ota:
-    minimum_version: "1.6.20"
+    minimum_version: "1.6.21"
 project:
   name: supabase
   description: Supabase monorepo readiness slice focused on www/docs/studio contributor workflows
@@ -12,10 +12,8 @@ execution:
     host:
       backend: native
       requirements:
-        runtimes:
-          node: "^22.12.0"
-        tools:
-          pnpm: "10.24.0"
+        toolchains:
+          - node
     docker-host:
       backend: native
       requirements:
@@ -25,8 +23,8 @@ execution:
       backend: container
       lifecycle: persistent
       requirements:
-        runtimes:
-          node: "^22.12.0"
+        toolchains:
+          - node
       attachments:
         isolated_paths:
           - node_modules
@@ -151,7 +149,7 @@ tasks:
         - node_modules
       network: true
       network_kind: dependency_hydration
-    safe_for_agent: true
+    safe_for_agent: false
   build:
     context: host
     description: Build all workspaces
@@ -164,8 +162,6 @@ tasks:
         - node
       checks:
         - workspace-dependencies-installed
-    depends_on:
-      - install
     safe_for_agent: true
   typecheck:
     context: host
@@ -179,8 +175,6 @@ tasks:
         - node
       checks:
         - workspace-dependencies-installed
-    depends_on:
-      - install
     safe_for_agent: true
   format:check:
     context: host
@@ -194,8 +188,6 @@ tasks:
         - node
       checks:
         - workspace-dependencies-installed
-    depends_on:
-      - install
     safe_for_agent: true
   dev:www:
     context: host
@@ -204,20 +196,35 @@ tasks:
       Canonical local site frontend run task (`www` surface on port 3000).
       Container mode publishes the service on an automatically selected host port to avoid local port collisions.
     category: dev
-    run: corepack pnpm dev:www
+    launch:
+      kind: command
+      exe: corepack
+      args:
+        - pnpm
+        - dev:www
     execution:
       default_mode: native
       modes:
         native:
           context: host
-          run: corepack pnpm dev:www
+          launch:
+            kind: command
+            exe: corepack
+            args:
+              - pnpm
+              - dev:www
           runtime:
             kind: service
             surfaces:
               - www
         container:
           context: app
-          run: corepack pnpm dev:www
+          launch:
+            kind: command
+            exe: corepack
+            args:
+              - pnpm
+              - dev:www
           runtime:
             kind: service
             surfaces:
@@ -249,20 +256,35 @@ tasks:
       Prefer this for docs-only edits to keep iteration tight.
       Container mode publishes the service on an automatically selected host port to avoid local port collisions.
     category: dev
-    run: corepack pnpm dev:docs
+    launch:
+      kind: command
+      exe: corepack
+      args:
+        - pnpm
+        - dev:docs
     execution:
       default_mode: native
       modes:
         native:
           context: host
-          run: corepack pnpm dev:docs
+          launch:
+            kind: command
+            exe: corepack
+            args:
+              - pnpm
+              - dev:docs
           runtime:
             kind: service
             surfaces:
               - docs
         container:
           context: app
-          run: corepack pnpm dev:docs
+          launch:
+            kind: command
+            exe: corepack
+            args:
+              - pnpm
+              - dev:docs
           runtime:
             kind: service
             surfaces:
@@ -309,7 +331,16 @@ tasks:
       Use this when editing `apps/studio` and you need the local Supabase backend services.
       This workflow is intentionally heavier than the `www` or `docs` slices because it brings up the local backend first.
     category: dev
-    run: NODE_ENV=test pnpm --prefix ./apps/studio dev
+    env:
+      NODE_ENV: test
+    launch:
+      kind: command
+      exe: corepack
+      args:
+        - pnpm
+        - --prefix
+        - ./apps/studio
+        - dev
     requirements:
       toolchains:
         - node
@@ -357,7 +388,15 @@ tasks:
       Use this when you want the documented self-hosted Docker path rooted under `docker/`.
       This is distinct from the `studio` workflow, which uses the local Supabase CLI backend plus a host-native Studio frontend.
     category: dev
-    run: cd docker && docker compose up
+    adapter_inputs:
+      compose:
+        cwd: docker
+    launch:
+      kind: command
+      exe: docker
+      args:
+        - compose
+        - up
     requirements:
       checks:
         - docker-env-configured
@@ -374,7 +413,14 @@ tasks:
     notes: |
       Internal cleanup task for Docker Studio workflow pressure tests and local teardown.
     category: cleanup
-    run: cd docker && docker compose down
+    adapter_inputs:
+      compose:
+        cwd: docker
+    command:
+      exe: docker
+      args:
+        - compose
+        - down
     requirements:
       checks:
         - docker-env-configured
@@ -525,12 +571,11 @@ checks:
     expect: file
     timeout: 10000
 agent:
-  entrypoint: install
+  entrypoint: build
   default_task: build
   safe_tasks:
     - setup:env-www
     - setup:docker-env
-    - install
     - build
     - typecheck
     - format:check
@@ -560,9 +605,9 @@ agent:
     - apps/www/.env.local.example
   bootstrap:
     ota:
-      note: This pressure contract depends on Ota `1.6.20` surfaces (`tasks.<name>.prepare` and canonical toolchain fulfillment), so bootstrap stays pinned to the released `v1.6.20` line.
-      sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.20 sh
-      powershell: $env:OTA_VERSION='v1.6.20'; irm https://dist.ota.run/install.ps1 | iex
+      note: This pressure contract depends on Ota `1.6.21` surfaces, including compose adapter-root ownership through `adapter_inputs.compose.cwd`, so bootstrap stays pinned to the released `v1.6.21` line.
+      sh: curl -fsSL https://dist.ota.run/install.sh | OTA_VERSION=v1.6.21 sh
+      powershell: $env:OTA_VERSION='v1.6.21'; irm https://dist.ota.run/install.ps1 | iex
   notes: |
     This contract intentionally scopes to www/docs/studio contributor workflows plus the documented Docker
     Studio path for readiness pressure-testing.
