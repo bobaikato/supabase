@@ -10,7 +10,7 @@ on:
       ota_ref:
         description: Ota ref used by the Studio Docker proof job when validating unreleased Ota changes
         required: false
-        default: 1.6.20-implementation
+        default: 1.6.21-implementation
       run_studio_runtime_proof:
         description: Run the heavier native Studio runtime proof lane on hosted Ubuntu
         required: false
@@ -91,7 +91,7 @@ jobs:
         uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
 
       - name: Verify ota install [bash]
         if: matrix.run_shell == 'bash'
@@ -451,7 +451,7 @@ jobs:
         uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
 
       - name: Verify ota install
         shell: bash
@@ -636,7 +636,7 @@ jobs:
         uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
 
       - name: Verify ota install
         shell: bash
@@ -791,7 +791,7 @@ jobs:
         uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
 
       - name: Verify ota install
         shell: bash
@@ -925,7 +925,7 @@ jobs:
         uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
 
       - name: Verify Docker engine availability
         shell: bash
@@ -1019,7 +1019,7 @@ jobs:
         uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
-          ref: ${{ github.event.inputs.ota_ref || '1.6.20-implementation' }}
+          ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
 
       - name: Verify ota install
         shell: bash
