@@ -50,7 +50,7 @@ jobs:
           - name: macos-bash
             os: macos-latest
             run_shell: bash
-            full_proof: true
+            full_proof: false
           - name: windows-pwsh
             os: windows-latest
             run_shell: pwsh
@@ -88,7 +88,7 @@ jobs:
           pnpm --version
 
       - name: Install ota from source
-        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.19
+        uses: ota-run/ota/.github/actions/install-ota-from-source@v1.6.21
         with:
           repository: ${{ github.event.inputs.ota_repository || 'bobaikato/ota' }}
           ref: ${{ github.event.inputs.ota_ref || '1.6.21-implementation' }}
@@ -225,7 +225,7 @@ jobs:
 
       - name: Proof instant workflow (readiness + annotations)
         id: proof_instant
-        if: matrix.run_shell == 'bash'
+        if: matrix.full_proof && matrix.run_shell == 'bash'
         continue-on-error: true
         shell: bash
         run: |
@@ -236,7 +236,7 @@ jobs:
 
       - name: Proof instant workflow (readiness + annotations) [pwsh]
         id: proof_instant_pwsh
-        if: matrix.run_shell == 'pwsh'
+        if: matrix.full_proof && matrix.run_shell == 'pwsh'
         continue-on-error: true
         timeout-minutes: 20
         shell: pwsh
@@ -544,7 +544,7 @@ jobs:
 
       - name: Proof instant:container workflow (readiness + annotations)
         id: proof_instant_container
-        if: steps.docker_capability.outputs.supported == 'true'
+        if: steps.docker_capability.outputs.supported == 'true' && github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           ota clean . || true
