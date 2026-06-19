@@ -125,6 +125,8 @@ tasks:
       This is the canonical dependency hydration step for all workflows.
       Run this first on fresh clones and after lockfile changes.
     category: setup
+    env:
+      CI: "true"
     prepare:
       kind: dependency_hydration
       medium: package_dependencies
