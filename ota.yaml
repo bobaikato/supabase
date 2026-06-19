@@ -166,6 +166,8 @@ tasks:
         - node
       checks:
         - workspace-dependencies-installed
+    depends_on:
+      - install
     safe_for_agent: true
   typecheck:
     context: host
@@ -183,6 +185,8 @@ tasks:
         - node
       checks:
         - workspace-dependencies-installed
+    depends_on:
+      - install
     safe_for_agent: true
   format:check:
     context: host
@@ -200,6 +204,8 @@ tasks:
         - node
       checks:
         - workspace-dependencies-installed
+    depends_on:
+      - install
     safe_for_agent: true
   dev:www:
     context: host
