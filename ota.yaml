@@ -156,7 +156,11 @@ tasks:
     notes: |
       Use this for cross-workspace verification before CI-facing changes.
     category: build
-    run: corepack pnpm build
+    command:
+      exe: corepack
+      args:
+        - pnpm
+        - build
     requirements:
       toolchains:
         - node
@@ -169,7 +173,11 @@ tasks:
     notes: |
       Bounded verification task for code safety before CI-facing changes.
     category: test
-    run: corepack pnpm typecheck
+    command:
+      exe: corepack
+      args:
+        - pnpm
+        - typecheck
     requirements:
       toolchains:
         - node
@@ -182,7 +190,11 @@ tasks:
     notes: |
       Bounded formatting verification task aligned with upstream checks.
     category: test
-    run: corepack pnpm test:prettier
+    command:
+      exe: corepack
+      args:
+        - pnpm
+        - test:prettier
     requirements:
       toolchains:
         - node
@@ -315,7 +327,11 @@ tasks:
       This follows the repo's canonical Studio contributor path.
       It starts the local Supabase backend (excluding Studio itself), writes `keys.json`, and generates `apps/studio/.env.test`.
     category: setup
-    run: corepack pnpm setup:cli
+    command:
+      exe: corepack
+      args:
+        - pnpm
+        - setup:cli
     requirements:
       toolchains:
         - node
@@ -361,7 +377,15 @@ tasks:
     notes: |
       Internal cleanup task for Studio workflow pressure tests and local teardown.
     category: cleanup
-    run: corepack pnpm exec supabase stop --all --no-backup
+    command:
+      exe: corepack
+      args:
+        - pnpm
+        - exec
+        - supabase
+        - stop
+        - --all
+        - --no-backup
     requirements:
       toolchains:
         - node
